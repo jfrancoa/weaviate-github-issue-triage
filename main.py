@@ -37,6 +37,9 @@ client = weaviate.connect_to_weaviate_cloud(
     cluster_url=weaviate_url,
     auth_credentials=Auth.api_key(weaviate_api_key),
 )
+
+no_match_phrase = "No GitHub issue contains an exact or very close body description"
+
 # old_system_prompt = (
 #     "You are an expert assistant for matching GitHub issues to user-provided descriptions, sentences, or code snippets. "
 #     "Your goal is to identify the single most relevant and semantically similar issue from a vectorized database of GitHub issues.\n\n"
@@ -101,7 +104,7 @@ agent = QueryAgent(
     system_prompt=system_prompt,
 )
 
-query = f"Check if there are any existing GitHub issues related to the following github issue body: \n\n '{issue_body}'\n\n If no similar issue exists, note that as well."
+query = f"Check if there are any existing GitHub issues related to the following github issue body: \n\n '{issue_body}'\n\n If no similar issue exists, return the following phrase (literally): '{no_match_phrase}'."
 result = agent.run(query)
 
 result_text = result.final_answer
@@ -109,7 +112,7 @@ result_text = result.final_answer
 result.display()
 
 # Only comment if the result does NOT contain the specific phrase indicating no match
-if len(result.sources) == 0:
+if no_match_phrase in result_text:
     print("No relevant issue found, skipping comment.")
     client.close()
     exit(0)
