@@ -1,0 +1,33 @@
+name: 'Weaviate Issue Similarity Commenter'
+description: 'Checks new GitHub issues for semantic similarity in Weaviate and comments if a match is found.'
+inputs:
+  weaviate_url:
+    description: 'Weaviate instance URL'
+    required: true
+  weaviate_api_key:
+    description: 'Weaviate API key'
+    required: true
+  github_token:
+    description: 'GitHub token for posting comments'
+    required: true
+  collection_name:
+    description: 'Weaviate collection name in which to search for similar issues'
+    required: false
+    default: 'GitHubIssues'
+  github_repository:
+    description: 'GitHub repository in which the issue was created, use the format "owner/repo". For example: "weaviate/weaviate"'
+    required: false
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    WEAVIATE_URL: ${{ inputs.weaviate_url }}
+    WEAVIATE_API_KEY: ${{ inputs.weaviate_api_key }}
+    GITHUB_TOKEN: ${{ inputs.github_token }}
+    ISSUE_BODY: ${{ github.event.issue.body }}
+    ISSUE_NUMBER: ${{ github.event.issue.number }}
+    GITHUB_REPO_NAME: ${{ inputs.github_repository }}
+    COLLECTION_NAME: ${{ inputs.collection_name }}
+branding:
+  icon: 'search'
+  color: 'blue' 

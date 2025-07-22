@@ -1,0 +1,20 @@
+name: Weaviate Issue Similarity
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  check-similarity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for similar issues in Weaviate
+        uses: ./
+        with:
+          weaviate_url: ${{ secrets.WEAVIATE_URL }}
+          weaviate_api_key: ${{ secrets.WEAVIATE_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }} 
+          github_repository: "weaviate/weaviate"
