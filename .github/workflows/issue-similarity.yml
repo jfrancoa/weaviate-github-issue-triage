@@ -11,10 +11,15 @@ jobs:
   check-similarity:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Check for similar issues in Weaviate
         uses: ./
         with:
+          issue_body: ${{ github.event.issue.body }}
+          issue_number: ${{ github.event.issue.number }}
           weaviate_url: ${{ secrets.WEAVIATE_URL }}
           weaviate_api_key: ${{ secrets.WEAVIATE_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }} 
-          github_repository: "weaviate/weaviate"
+          github_token: ${{ secrets.GITHUB_TOKEN }}

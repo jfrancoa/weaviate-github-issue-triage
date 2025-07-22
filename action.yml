@@ -1,6 +1,12 @@
 name: 'Weaviate Issue Similarity Commenter'
 description: 'Checks new GitHub issues for semantic similarity in Weaviate and comments if a match is found.'
 inputs:
+  issue_body:
+    description: 'The body of the issue to check for similarity'
+    required: true
+  issue_number:
+    description: 'The number of the issue to check for similarity'
+    required: true
   weaviate_url:
     description: 'Weaviate instance URL'
     required: true
@@ -24,8 +30,8 @@ runs:
     WEAVIATE_URL: ${{ inputs.weaviate_url }}
     WEAVIATE_API_KEY: ${{ inputs.weaviate_api_key }}
     GITHUB_TOKEN: ${{ inputs.github_token }}
-    ISSUE_BODY: ${{ github.event.issue.body }}
-    ISSUE_NUMBER: ${{ github.event.issue.number }}
+    ISSUE_BODY: ${{ inputs.issue_body }}
+    ISSUE_NUMBER: ${{ inputs.issue_number }}
     GITHUB_REPO_NAME: ${{ inputs.github_repository }}
     COLLECTION_NAME: ${{ inputs.collection_name }}
 branding:
