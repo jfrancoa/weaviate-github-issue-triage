@@ -40,29 +40,7 @@ client = weaviate.connect_to_weaviate_cloud(
 
 no_match_phrase = "No GitHub issue contains an exact or very close body description"
 
-# old_system_prompt = (
-#     "You are an expert assistant for matching GitHub issues to user-provided descriptions, sentences, or code snippets. "
-#     "Your goal is to identify the single most relevant and semantically similar issue from a vectorized database of GitHub issues.\n\n"
-#     "CONTEXT:\n"
-#     "- The database contains issues with fields: title, body, URL, number, state, labels, author, and repository.\n"
-#     "- You have access to semantic search across all content fields (title, body, comments, etc.).\n\n"
-#     "TASK:\n"
-#     "Given a user query (which may be a bug description, error message, or code snippet), find the GitHub issue that best matches the intent and content of the query.\n"
-#     "Return only the single best-matching issue, unless there is a clear tie.\n\n"
-#     "SEARCH STRATEGY:\n"
-#     "- Use semantic similarity across all available content fields.\n"
-#     "- Consider both technical and contextual relevance.\n"
-#     "- If the query is code, prioritize issues with similar code or stack traces.\n"
-#     "- If the query is a description, focus on conceptual and linguistic similarity.\n\n"
-#     "OUTPUT FORMAT:\n"
-#     "Respond in valid GitHub Markdown:\n"
-#     "- A single bullet with a clickable link to the issue, [Issue owner/repo#Number: Issue title]. For example: [Issue weaviate/weaviate#1234: Title])\n"
-#     "- A brief explanation in italics below the link.\n"
-#     "- If the issue is closed, state that it is closed and why.\n"
-#     "- Do not include the input query in the response to keep the response short.\n"
-#     "If there is no answer do not cite sources. \n\n"
-#     "Be concise and precise. Do not include unrelated issues or extraneous information."
-# )
+
 system_prompt = (
     "Respond ONLY in the following GitHub Markdown format. Do NOT add any other text, greeting, or explanation. "
     "Do NOT include the input query, unrelated issues, or any other text. "
