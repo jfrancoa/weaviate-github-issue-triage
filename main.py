@@ -93,20 +93,18 @@ except Exception as e:
 no_match_phrase = "No GitHub issue contains an exact or very close body description"
 
 system_prompt = (
-    "Respond ONLY in the following GitHub Markdown format. Do NOT add any other text, greeting, or explanation. "
-    "Do NOT include the input query, unrelated issues, or any other text. "
+    "You are an expert assistant for matching GitHub issues to user-provided descriptions.\n\n"
+    "CRITICAL INSTRUCTION: If no similar or very close issue exists, you MUST return EXACTLY this phrase and nothing else:\n"
+    "'{no_match_phrase}'\n\n"
+    "If a similar issue IS found, respond in this GitHub Markdown format:\n"
     "- [Issue owner/repo#Number: Issue title](URL)\n"
     "A brief explanation of the issue, one or two sentences.\n\n"
     "If the issue is closed, add '(Closed)' after the title and state why in the explanation.\n\n"
-    "EXAMPLES (do exactly this):\n"
+    "EXAMPLES:\n"
     "- [Issue weaviate/weaviate#6549: Collection name does not always auto capitalize the first letter](https://github.com/weaviate/weaviate/issues/6549)\n"
     "This issue describes the inconsistent auto-capitalization of collection names in Weaviate. (Closed as fixed.)\n\n"
     "- [Issue weaviate/weaviate#5789: Case sensitivity in collection names](https://github.com/weaviate/weaviate/issues/5789)\n"
     "This open issue discusses broader case sensitivity inconsistencies in collection names.\n\n"
-    "BAD EXAMPLE (do NOT do this):\n"
-    "There is an existing GitHub issue that directly relates to the described problem about Weaviate automatically capitalizing the first letter of collection names to follow GraphQL conventions, but this behavior being inconsistent across contexts. The issue is titled ...\n\n"
-    "Do NOT add any greeting, summary, or extra explanation. Only output the Markdown bullet and explanation as shown above.\n"
-    "You are an expert assistant for matching GitHub issues to user-provided descriptions, sentences, or code snippets. \n"
     "GOAL:\n"
     "Your goal is to identify the single most relevant and semantically similar issue from a vectorized database of GitHub issues.\n\n"
     "CONTEXT:\n"
@@ -119,8 +117,9 @@ system_prompt = (
     "- Use semantic similarity across all available content fields.\n"
     "- Consider both technical and contextual relevance.\n"
     "- If the query is code, prioritize issues with similar code or stack traces.\n"
+    "- If a panic error is provided, prioritize issues with similar error messages.\n"
     "- If the query is a description, focus on conceptual and linguistic similarity.\n\n"
-    "If no similar or very close issue exists, return the following phrase (literally): '{no_match_phrase}'. Make sure always to return the exact phrase if not issue is found, do not add any other text or explanation."
+    "IMPORTANT: Do NOT add any greeting, summary, or extra explanation. Only output the Markdown bullet and explanation as shown above, OR the exact no-match phrase."
 )
 
 try:
@@ -144,7 +143,7 @@ except Exception as e:
     set_output("error_message", error_msg)
     sys.exit(1)
 
-query = f"Check if there are any existing GitHub issues related to the following github issue body: \n\n '{issue_body}'\n\n If no similar or very close issue exists, return the following phrase (literally): '{no_match_phrase}'. Make sure always to return the exact phrase if not issue is found, do not add any other text or explanation."
+query = f"Find the most similar GitHub issue to this issue body: '{issue_body}'\n\nIf no similar issue exists, return exactly: '{no_match_phrase}'"
 
 try:
     result = agent.run(query)
@@ -162,7 +161,7 @@ except Exception as e:
 result.display()
 
 # Only comment if the result does NOT contain the specific phrase indicating no match
-if no_match_phrase in result_text:
+if "no github issue" in result_text.lower():
     logger.info("No relevant issue found, skipping comment.")
     set_output("found_similar_issue", "false")
     set_output("comment_posted", "false")
