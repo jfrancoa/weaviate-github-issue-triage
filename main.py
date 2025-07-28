@@ -120,6 +120,7 @@ system_prompt = (
     "- Consider both technical and contextual relevance.\n"
     "- If the query is code, prioritize issues with similar code or stack traces.\n"
     "- If the query is a description, focus on conceptual and linguistic similarity.\n\n"
+    "If no similar or very close issue exists, return the following phrase (literally): '{no_match_phrase}'. Make sure always to return the exact phrase if not issue is found, do not add any other text or explanation."
 )
 
 try:
@@ -143,7 +144,7 @@ except Exception as e:
     set_output("error_message", error_msg)
     sys.exit(1)
 
-query = f"Check if there are any existing GitHub issues related to the following github issue body: \n\n '{issue_body}'\n\n If no similar issue exists, return the following phrase (literally): '{no_match_phrase}'."
+query = f"Check if there are any existing GitHub issues related to the following github issue body: \n\n '{issue_body}'\n\n If no similar or very close issue exists, return the following phrase (literally): '{no_match_phrase}'. Make sure always to return the exact phrase if not issue is found, do not add any other text or explanation."
 
 try:
     result = agent.run(query)
