@@ -1,9 +1,37 @@
 import os
+import sys
+import logging
 import requests
 import weaviate
 from weaviate.classes.init import Auth
 from weaviate.agents.query import QueryAgent
 from weaviate_agents.classes import QueryAgentCollectionConfig
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
+def set_output(name, value):
+    """Set GitHub Action output if running in GitHub Actions"""
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"{name}={value}\n")
+
+
+# Validate required environment variables
+required_env_vars = ["WEAVIATE_URL", "GITHUB_TOKEN", "ISSUE_BODY", "ISSUE_NUMBER"]
+
+missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
+if missing_vars:
+    error_msg = f"Missing required environment variables: {missing_vars}"
+    logger.error(error_msg)
+    set_output("found_similar_issue", "false")
+    set_output("comment_posted", "false")
+    set_output("error_message", error_msg)
+    sys.exit(1)
 
 weaviate_url = os.environ["WEAVIATE_URL"]
 weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
@@ -18,10 +46,25 @@ if not repo_full_name:
     repo_full_name = os.environ.get("GITHUB_REPOSITORY", "")
 
 if not repo_full_name:
-    print(
-        "Error: Repository full name is not set. Please specify github_repository input."
+    error_msg = (
+        "Repository full name is not set. Please specify github_repository input."
     )
-    exit(1)
+    logger.error(error_msg)
+    set_output("found_similar_issue", "false")
+    set_output("comment_posted", "false")
+    set_output("error_message", error_msg)
+    sys.exit(1)
+
+# Validate issue number is numeric
+try:
+    int(issue_number)
+except ValueError:
+    error_msg = f"Invalid issue number: {issue_number}"
+    logger.error(error_msg)
+    set_output("found_similar_issue", "false")
+    set_output("comment_posted", "false")
+    set_output("error_message", error_msg)
+    sys.exit(1)
 
 
 def convert_to_italic(text: str) -> str:
@@ -33,13 +76,21 @@ def convert_to_italic(text: str) -> str:
     return "\n\n".join(f"_{p}_" for p in paragraphs)
 
 
-client = weaviate.connect_to_weaviate_cloud(
-    cluster_url=weaviate_url,
-    auth_credentials=Auth.api_key(weaviate_api_key),
-)
+try:
+    client = weaviate.connect_to_weaviate_cloud(
+        cluster_url=weaviate_url,
+        auth_credentials=Auth.api_key(weaviate_api_key),
+    )
+    logger.info("Successfully connected to Weaviate")
+except Exception as e:
+    error_msg = f"Failed to connect to Weaviate: {e}"
+    logger.error(error_msg)
+    set_output("found_similar_issue", "false")
+    set_output("comment_posted", "false")
+    set_output("error_message", error_msg)
+    sys.exit(1)
 
 no_match_phrase = "No GitHub issue contains an exact or very close body description"
-
 
 system_prompt = (
     "Respond ONLY in the following GitHub Markdown format. Do NOT add any other text, greeting, or explanation. "
@@ -54,8 +105,10 @@ system_prompt = (
     "This open issue discusses broader case sensitivity inconsistencies in collection names.\n\n"
     "BAD EXAMPLE (do NOT do this):\n"
     "There is an existing GitHub issue that directly relates to the described problem about Weaviate automatically capitalizing the first letter of collection names to follow GraphQL conventions, but this behavior being inconsistent across contexts. The issue is titled ...\n\n"
-    "Do NOT add any greeting, summary, or extra explanation. Only output the Markdown bullet and explanation as shown above."
-    "You are an expert assistant for matching GitHub issues to user-provided descriptions, sentences, or code snippets. "
+    "Do NOT add any greeting, summary, or extra explanation. Only output the Markdown bullet and explanation as shown above.\n"
+    "Avoid excessive politeness, flattery, or empty affirmations. Avoid over-enthusiasm or emotionally charged language. Be direct and factual, focusing on usefulness, clarity, and logic."
+    "Prioritize truth and clarity over appeasing me. Avoid going off-topic or over-explaining unless I ask for more detail.\n"
+    "You are an expert assistant for matching GitHub issues to user-provided descriptions, sentences, or code snippets. \n"
     "GOAL:\n"
     "Your goal is to identify the single most relevant and semantically similar issue from a vectorized database of GitHub issues.\n\n"
     "CONTEXT:\n"
@@ -71,29 +124,55 @@ system_prompt = (
     "- If the query is a description, focus on conceptual and linguistic similarity.\n\n"
 )
 
-agent = QueryAgent(
-    client=client,
-    collections=[
-        QueryAgentCollectionConfig(
-            name=collection_name,
-            target_vector=["all_content"],
-        ),
-    ],
-    system_prompt=system_prompt,
-)
+try:
+    agent = QueryAgent(
+        client=client,
+        collections=[
+            QueryAgentCollectionConfig(
+                name=collection_name,
+                target_vector=["all_content"],
+            ),
+        ],
+        system_prompt=system_prompt,
+    )
+    logger.info(f"QueryAgent initialized with collection: {collection_name}")
+except Exception as e:
+    error_msg = f"Failed to initialize QueryAgent: {e}"
+    logger.error(error_msg)
+    client.close()
+    set_output("found_similar_issue", "false")
+    set_output("comment_posted", "false")
+    set_output("error_message", error_msg)
+    sys.exit(1)
 
 query = f"Check if there are any existing GitHub issues related to the following github issue body: \n\n '{issue_body}'\n\n If no similar issue exists, return the following phrase (literally): '{no_match_phrase}'."
-result = agent.run(query)
 
-result_text = result.final_answer
+try:
+    result = agent.run(query)
+    result_text = result.final_answer
+    logger.info("Query executed successfully")
+except Exception as e:
+    error_msg = f"Failed to execute query: {e}"
+    logger.error(error_msg)
+    client.close()
+    set_output("found_similar_issue", "false")
+    set_output("comment_posted", "false")
+    set_output("error_message", error_msg)
+    sys.exit(1)
 
 result.display()
 
 # Only comment if the result does NOT contain the specific phrase indicating no match
 if no_match_phrase in result_text:
-    print("No relevant issue found, skipping comment.")
+    logger.info("No relevant issue found, skipping comment.")
+    set_output("found_similar_issue", "false")
+    set_output("comment_posted", "false")
+    set_output("error_message", "")
     client.close()
-    exit(0)
+    sys.exit(0)
+
+# Similar issue found
+set_output("found_similar_issue", "true")
 
 comment_body = (
     f"👋 Thanks for opening this issue!\n\n"
@@ -109,10 +188,26 @@ headers = {
     "Authorization": f"Bearer {github_token}",
     "Accept": "application/vnd.github+json",
 }
-response = requests.post(comments_url, json={"body": comment_body}, headers=headers)
-if response.status_code == 201:
-    print("Comment posted successfully.")
-else:
-    print(f"Failed to post comment: {response.status_code} {response.text}")
 
-client.close()
+try:
+    response = requests.post(comments_url, json={"body": comment_body}, headers=headers)
+    if response.status_code == 201:
+        logger.info("Comment posted successfully.")
+        set_output("comment_posted", "true")
+        set_output("error_message", "")
+        client.close()
+        sys.exit(0)
+    else:
+        error_msg = f"Failed to post comment: {response.status_code} {response.text}"
+        logger.error(error_msg)
+        set_output("comment_posted", "false")
+        set_output("error_message", error_msg)
+        client.close()
+        sys.exit(1)
+except Exception as e:
+    error_msg = f"Exception while posting comment: {e}"
+    logger.error(error_msg)
+    set_output("comment_posted", "false")
+    set_output("error_message", error_msg)
+    client.close()
+    sys.exit(1)

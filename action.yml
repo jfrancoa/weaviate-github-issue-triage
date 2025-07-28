@@ -12,7 +12,8 @@ inputs:
     required: true
   weaviate_api_key:
     description: 'Weaviate API key'
-    required: true
+    required: false
+    default: ''
   github_token:
     description: 'GitHub token for posting comments'
     required: true
@@ -23,6 +24,13 @@ inputs:
   github_repository:
     description: 'GitHub repository in which the issue was created, use the format "owner/repo". For example: "weaviate/weaviate"'
     required: false
+outputs:
+  found_similar_issue:
+    description: 'Whether a similar issue was found'
+  comment_posted:
+    description: 'Whether a comment was successfully posted'
+  error_message:
+    description: 'Error message if the action failed'
 runs:
   using: 'docker'
   image: 'Dockerfile'

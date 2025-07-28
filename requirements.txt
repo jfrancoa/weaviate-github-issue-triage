@@ -1,2 +1,2 @@
 weaviate-client[agents]
-requests 
+requests

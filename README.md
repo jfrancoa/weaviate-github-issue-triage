@@ -26,15 +26,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check for similar issues
+        id: similarity-check
         uses: weaviate/weaviate-github-issue-triage@v1
         with:
           issue_body: ${{ github.event.issue.body }}
           issue_number: ${{ github.event.issue.number }}
           weaviate_url: ${{ secrets.WEAVIATE_URL }}
-          weaviate_api_key: ${{ secrets.WEAVIATE_API_KEY }}
+          weaviate_api_key: ${{ secrets.WEAVIATE_API_KEY }} # optional
           github_token: ${{ secrets.GITHUB_TOKEN }}
           collection_name: GitHubIssues  # optional
           github_repository: ${{ github.repository }}  # optional
+
+      - name: Log results
+        if: always()
+        run: |
+          echo "Found similar issue: ${{ steps.similarity-check.outputs.found_similar_issue }}"
+          echo "Comment posted: ${{ steps.similarity-check.outputs.comment_posted }}"
+          if [ "${{ steps.similarity-check.outputs.error_message }}" != "" ]; then
+            echo "Error: ${{ steps.similarity-check.outputs.error_message }}"
+          fi
 ```
 
 ## Inputs
@@ -44,7 +54,7 @@ jobs:
 | `issue_body`       | Yes      | The body content of the newly opened GitHub issue. Used as the query for semantic similarity.     | —               |
 | `issue_number`     | Yes      | The number of the newly opened GitHub issue. Used to post comments if a duplicate is found.       | —               |
 | `weaviate_url`     | Yes      | The URL of your Weaviate instance.                                                                | —               |
-| `weaviate_api_key` | Yes      | API key for authenticating with your Weaviate instance.                                           | —               |
+| `weaviate_api_key` | No      | API key for authenticating with your Weaviate instance. If not authentication is configured you can use the default or pass empty string.                                         | —               |
 | `github_token`     | Yes      | GitHub token with permission to post comments on issues. Usually `${{ secrets.GITHUB_TOKEN }}`.   | —               |
 | `collection_name`  | No       | Name of the Weaviate collection to search for similar issues.                                     | `GitHubIssues`  |
 | `github_repository`| No       | Repository in `owner/repo` format. If not set, defaults to the current repository context.        | —               |
@@ -61,7 +71,11 @@ jobs:
 
 ## Outputs
 
-This action does not produce explicit outputs, but will comment on the issue if a similar one is found.
+| Name                | Description                                    |
+|---------------------|------------------------------------------------|
+| `found_similar_issue` | `true` if a similar issue was found, `false` otherwise |
+| `comment_posted`      | `true` if a comment was successfully posted, `false` otherwise |
+| `error_message`       | Error message if the action failed, empty string otherwise |
 
 ## Requirements
 
@@ -70,6 +84,24 @@ This action does not produce explicit outputs, but will comment on the issue if 
   - `weaviate-client[agents]`
   - `requests`
 
-## License
+## Troubleshooting
 
-MIT
+### Common Issues
+
+1. **"Missing required environment variables"**: Ensure all required secrets are properly configured in your repository settings.
+
+2. **"Failed to connect to Weaviate"**: Verify your Weaviate URL and API key are correct.
+
+3. **"Failed to post comment"**: Check that your GitHub token has the `repo` scope and can post comments on issues.
+
+4. **"Repository full name is not set"**: Make sure to provide the `github_repository` input or ensure the workflow runs in the correct repository context.
+
+### Debugging
+
+The action provides detailed logging. Check the workflow logs for:
+- Connection status to Weaviate
+- Query execution results
+- Comment posting status
+- Any error messages
+
+
