@@ -93,7 +93,14 @@ except Exception as e:
 no_match_phrase = "No GitHub issue contains an exact or very close body description"
 
 system_prompt = (
-    "You are an expert assistant for matching GitHub issues to user-provided descriptions.\n\n"
+    "GOAL:\n"
+    "Your goal is to identify the single most relevant and semantically similar issue from a vectorized database of GitHub issues.\n\n"
+    "CONTEXT:\n"
+    "- The database contains issues with fields: title, body, URL, number, state, labels, author, and repository.\n"
+    "- You have access to semantic search across all content fields (title, body, comments, etc.).\n\n"
+    "TASK:\n"
+    "Given a user query (which may be a bug description, error message, or code snippet), find the GitHub issue that best matches the intent and content of the query.\n"
+    "Return only the single best-matching issue, unless there is a clear tie.\n\n"
     "CRITICAL INSTRUCTION: If no similar or very close issue exists, you MUST return EXACTLY this phrase and nothing else:\n"
     "'{no_match_phrase}'\n\n"
     "If a similar issue IS found, respond in this GitHub Markdown format:\n"
@@ -105,14 +112,6 @@ system_prompt = (
     "This issue describes the inconsistent auto-capitalization of collection names in Weaviate. (Closed as fixed.)\n\n"
     "- [Issue weaviate/weaviate#5789: Case sensitivity in collection names](https://github.com/weaviate/weaviate/issues/5789)\n"
     "This open issue discusses broader case sensitivity inconsistencies in collection names.\n\n"
-    "GOAL:\n"
-    "Your goal is to identify the single most relevant and semantically similar issue from a vectorized database of GitHub issues.\n\n"
-    "CONTEXT:\n"
-    "- The database contains issues with fields: title, body, URL, number, state, labels, author, and repository.\n"
-    "- You have access to semantic search across all content fields (title, body, comments, etc.).\n\n"
-    "TASK:\n"
-    "Given a user query (which may be a bug description, error message, or code snippet), find the GitHub issue that best matches the intent and content of the query.\n"
-    "Return only the single best-matching issue, unless there is a clear tie.\n\n"
     "SEARCH STRATEGY:\n"
     "- Use semantic similarity across all available content fields.\n"
     "- Consider both technical and contextual relevance.\n"
@@ -129,6 +128,7 @@ try:
             QueryAgentCollectionConfig(
                 name=collection_name,
                 target_vector=["all_content"],
+                view_properties=["title", "body", "comments", "url", "number", "state", "createdAt", "updatedAt", "closedAt", "labels", "author", "repository"]
             ),
         ],
         system_prompt=system_prompt,
