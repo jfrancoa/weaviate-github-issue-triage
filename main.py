@@ -96,12 +96,12 @@ system_prompt = (
     "GOAL:\n"
     "Your goal is to identify the single most relevant and semantically similar issue from a vectorized database of GitHub issues.\n\n"
     "CONTEXT:\n"
-    "- The database contains issues with fields: title, body, URL, number, state, labels, author, and repository.\n"
+    "- The database contains issues with fields: title, body, comments, URL, number, state, labels, author, and repository.\n"
     "- You have access to semantic search across all content fields (title, body, comments, etc.).\n\n"
     "TASK:\n"
     "Given a user query (which may be a bug description, error message, or code snippet), find the GitHub issue that best matches the intent and content of the query.\n"
-    "Return only the single best-matching issue, unless there is a clear tie.\n\n"
-    "CRITICAL INSTRUCTION: If no similar or very close issue exists, you MUST return EXACTLY this phrase and nothing else:\n"
+    "OUTPUT FORMAT:\n"
+    "- If no similar or very close issue exists, you MUST return EXACTLY this phrase and nothing else:\n"
     "'{no_match_phrase}'\n\n"
     "If a similar issue IS found, respond in this GitHub Markdown format:\n"
     "- [Issue owner/repo#Number: Issue title](URL)\n"
@@ -143,7 +143,7 @@ except Exception as e:
     set_output("error_message", error_msg)
     sys.exit(1)
 
-query = f"Find the most similar GitHub issue to this issue body: '{issue_body}'\n\nIf no similar issue exists, return exactly: '{no_match_phrase}'"
+query = f"Find the most similar GitHub issue (if any) to this issue body: '{issue_body}'\n\nIf no similar issue exists, return exactly: '{no_match_phrase}'"
 
 try:
     result = agent.run(query)
