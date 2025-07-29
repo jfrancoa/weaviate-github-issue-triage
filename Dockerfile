@@ -7,4 +7,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
 
-ENTRYPOINT ["python", "main.py"] 
+# Make the script executable
+RUN chmod +x /app/main.py
+
+# Set the entrypoint
+ENTRYPOINT ["python", "/app/main.py"]

@@ -1,5 +1,6 @@
 name: 'Weaviate Issue Similarity Commenter'
 description: 'Checks new GitHub issues for semantic similarity in Weaviate and comments if a match is found.'
+author: 'Weaviate'
 inputs:
   issue_body:
     description: 'The body of the issue to check for similarity'
@@ -31,6 +32,7 @@ outputs:
     description: 'Whether a comment was successfully posted'
   error_message:
     description: 'Error message if the action failed'
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -42,6 +44,7 @@ runs:
     ISSUE_NUMBER: ${{ inputs.issue_number }}
     GITHUB_REPO_NAME: ${{ inputs.github_repository }}
     COLLECTION_NAME: ${{ inputs.collection_name }}
+
 branding:
   icon: 'search'
-  color: 'blue' 
+  color: 'green' 
