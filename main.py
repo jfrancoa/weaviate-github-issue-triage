@@ -176,7 +176,13 @@ comment_body = (
     f"👋 Thanks for opening this issue!\n\n"
     f"I found a similar issue in our tracker that might address your problem:\n\n"
     f"{convert_to_italic(result_text)}\n\n"
-    f"Please check if this is the same issue. If so, consider adding your input there or closing this one. Thanks for helping us keep the issue tracker organized! 🚀"
+    f"Please check if this is the same issue. If so, consider adding your input there or closing this one. Thanks for helping us keep the issue tracker organized! 🚀\n\n"
+    f"---\n"
+    f"<div align=\"center\">\n"
+    f"<img src=\"https://tse1.mm.bing.net/th/id/OIP.A-2PG7j0L0X0H3M3lHuB4QHaHa\" width=\"32\" height=\"32\" alt=\"Weaviate Logo\">\n"
+    f"<br>\n"
+    f"<sub><strong>Powered by Weaviate</strong></sub>\n"
+    f"</div>"
 )
 
 comments_url = (
