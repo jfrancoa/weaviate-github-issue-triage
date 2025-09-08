@@ -22,7 +22,7 @@ def set_output(name, value):
 
 
 # Validate required environment variables
-required_env_vars = ["WEAVIATE_URL", "GITHUB_TOKEN", "ISSUE_BODY", "ISSUE_NUMBER"]
+required_env_vars = ["WEAVIATE_URL", "GITHUB_TOKEN", "ISSUE_NUMBER"]
 
 missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
 if missing_vars:
@@ -36,7 +36,7 @@ if missing_vars:
 weaviate_url = os.environ["WEAVIATE_URL"]
 weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
 github_token = os.environ["GITHUB_TOKEN"]
-issue_body = os.environ["ISSUE_BODY"]
+issue_body = os.environ.get("ISSUE_BODY", "")
 issue_number = os.environ["ISSUE_NUMBER"]
 collection_name = os.environ.get("COLLECTION_NAME", "GitHubIssues")
 
@@ -65,6 +65,14 @@ except ValueError:
     set_output("comment_posted", "false")
     set_output("error_message", error_msg)
     sys.exit(1)
+
+# Check if issue body is empty or missing
+if not issue_body or issue_body.strip() == "":
+    logger.info("Issue body is empty or missing, skipping similarity search.")
+    set_output("found_similar_issue", "false")
+    set_output("comment_posted", "false")
+    set_output("error_message", "")
+    sys.exit(0)
 
 
 def convert_to_italic(text: str) -> str:
@@ -102,7 +110,7 @@ system_prompt = (
     "Given a user query (which may be a bug description, error message, or code snippet), find the GitHub issue that best matches the intent and content of the query.\n"
     "OUTPUT FORMAT:\n"
     "- If no similar or very close issue exists, you MUST return EXACTLY this phrase and nothing else:\n"
-    "'{no_match_phrase}'\n\n"
+    f"'{no_match_phrase}'\n\n"
     "If a similar issue IS found, respond in this GitHub Markdown format:\n"
     "- [Issue owner/repo#Number: Issue title](URL)\n"
     "A brief explanation of the issue, one or two sentences.\n\n"
@@ -143,7 +151,7 @@ except Exception as e:
     set_output("error_message", error_msg)
     sys.exit(1)
 
-query = f"Find the most similar GitHub issue (if any) to this issue body: '{issue_body}'\n\nIf no similar issue exists, return exactly: '{no_match_phrase}'"
+query = f"Find the most similar GitHub issue (if any) to this issue body: '{issue_body}'"
 
 try:
     result = agent.run(query)
